@@ -1,4 +1,5 @@
-# unmodified from https://raw.githubusercontent.com/yig/trimesh/master/trimesh.py
+# this is a vendored 3rd party library for working with meshes
+# https://raw.githubusercontent.com/yig/trimesh/master/trimesh.py
 
 from __future__ import print_function, division
 from numpy import *

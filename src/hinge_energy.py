@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
-from trimesh import TriMesh
 from numpy.linalg import norm
-from scipy import optimize
 from scipy.linalg import eigh as eigendecomp
 import copy
 import numpy as np
 from util import assert_shape
 import util
-
-counter = 0
 
 def hinge_energy(input_vector, trimesh, gradient_mode, NUM_VERTS):
     """
@@ -163,12 +159,6 @@ def hinge_energy(input_vector, trimesh, gradient_mode, NUM_VERTS):
     # squared sum of the energies is our final cost value
     K = np.sum(energy)**2
 
-    # print cost at every invocation for debugging
-    global counter
-    if counter % 2 == 0:
-        print "cost: {}, count: {}".format(K, counter)
-    counter = counter + 1
-
     # return energy, gradient or both
     if gradient_mode == 0:
         return K
@@ -176,42 +166,3 @@ def hinge_energy(input_vector, trimesh, gradient_mode, NUM_VERTS):
         return jacobian.reshape(NUM_VERTS*3)
     elif gradient_mode == 2:
         return (K, jacobian.reshape(NUM_VERTS*3))
-
-if __name__ == '__main__':
-    mesh_obj_path = "bunny.obj"
-
-    trimesh = TriMesh.FromOBJ_FileName(mesh_obj_path)
-
-    # a lot of meshes have duplicate vertices associated
-    # with adjacent faces, clean that up.
-    trimesh = util.deduplicate_trimesh_vertices(trimesh)
-
-    NUM_VERTS = len(trimesh.vs)
-
-    # curry different versions of the energy function and the starting mesh
-    # these are now functions of a single variable that can be optimized
-    hinge_energy_only     = lambda x: hinge_energy(x, trimesh, gradient_mode=0, NUM_VERTS=NUM_VERTS)
-    hinge_grad_only       = lambda x: hinge_energy(x, trimesh, gradient_mode=1, NUM_VERTS=NUM_VERTS)
-    hinge_energy_and_grad = lambda x: hinge_energy(x, trimesh, gradient_mode=2, NUM_VERTS=NUM_VERTS)
-
-    # the first guess at the solution is the object itself
-    first_guess = trimesh.vs.reshape(NUM_VERTS*3)
-
-    # when this is false let scipy determine gradient for you
-    # when it's true, use our numerical gradient approximation
-    use_jac = False
-
-    print "starting optimization"
-    result = \
-        optimize.minimize(
-            fun=hinge_energy_and_grad if use_jac else hinge_energy_only,
-            x0=first_guess,
-            options={'disp': True},
-            method="L-BFGS-B",
-            constraints=None,
-            jac=use_jac)
-
-    final_mesh_verts = result.x.reshape(NUM_VERTS, 3)
-    
-    trimesh.vs = final_mesh_verts
-    trimesh.write_OBJ("optimized_bunny.obj")

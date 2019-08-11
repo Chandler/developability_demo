@@ -1,4 +1,4 @@
-## Written by optimize.py
+## Written by cli.py --in_obj=data/bunny.obj --out_obj=data/optimized_bunny.obj --energy=hinge --action=optimize
 
 v 33.54702803304075 20.97249377885974 39.33568101308678
 v 45.03439358042305 21.36350266997519 55.16763107212872

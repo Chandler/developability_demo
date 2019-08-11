@@ -6,14 +6,8 @@ def assert_shape(m, shape):
         raise ValueError("incorrect shape expected: {} found: {}".format(m.shape, shape))
 
 def angle_between(v1, v2):
-    """ Returns the angle in radians between vectors 'v1' and 'v2'::
-
-            >>> angle_between((1, 0, 0), (0, 1, 0))
-            1.5707963267948966
-            >>> angle_between((1, 0, 0), (1, 0, 0))
-            0.0
-            >>> angle_between((1, 0, 0), (-1, 0, 0))
-            3.141592653589793
+    """
+    Returns the angle in radians between vectors 'v1' and 'v2'::
     """
     def unit_vector(vector):
         """ Returns the unit vector of the vector.  """
@@ -24,7 +18,7 @@ def angle_between(v1, v2):
 
 def deduplicate_trimesh_vertices(trimesh):
     """
-    return a TriMesh with duplicate vertices removed
+    Accepts a `TriMesh` and returns a new `TriMesh` with duplicate vertices removed
     """
     def do_vert_hash(vert):
         return hash(str(set(vert)))
