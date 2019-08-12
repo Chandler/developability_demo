@@ -5,14 +5,14 @@ based on
 http://www.cs.columbia.edu/cg/developability/developability-of-triangle-meshes.pdf
 https://github.com/odedstein/DevelopabilityOfTriangleMeshes
 
-# run using scipy numerical gradient
+### run using scipy numerical gradient
 python cli.py \
     --in_obj=data/bunny.obj \
     --out_obj=data/optimized_bunny.obj \
     --energy=hinge \
     --action=optimize
 
-# run using exact gradient
+### run using exact gradient
 python cli.py \
 	--exact_grad \
     --in_obj=data/bunny.obj \
@@ -20,7 +20,7 @@ python cli.py \
     --energy=hinge \
     --action=optimize
 
-# debug exact gradien
+### debug exact gradient
 python cli.py \
 	--in_obj=data/bunny.obj \
 	--energy=hinge \
