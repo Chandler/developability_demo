@@ -5,6 +5,7 @@ import util
 from hinge_energy import hinge_energy
 from scipy import optimize
 import argparse
+from numpy.linalg import norm
 
 # different mesh energy functions
 # each one has the interface
@@ -81,7 +82,7 @@ def check_gradient(args):
 
     extact_gradient = grad_only(first_guess)
 
-    print approximate_gradient, extact_gradient
+    print "The difference between exact and numerical grad is: {}".format(norm(approximate_gradient - extact_gradient))
 
 # different functions this cli can invoke, each one takes
 # all the args
