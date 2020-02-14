@@ -72,9 +72,16 @@ def optimize_energy(args):
         lookup_vertex_face_neighbors[i_index] = trimesh.vertex_face_neighbors(i_index)
     
     faces = trimesh.faces
-    
+
+    from jax.lib import xla_bridge
+    print(xla_bridge.get_backend().platform)
+
+
     energy_only      = lambda x: hinge_energy_fast(x, faces, lookup_vertex_face_neighbors, gradient_mode=0, NUM_VERTS=NUM_VERTS)
-    energy_and_grad  = lambda x: (energy_only(x), grad(energy_only)(x))
+    energy_and_grad  = lambda x: hinge_energy_fast(x, faces, lookup_vertex_face_neighbors, gradient_mode=2, NUM_VERTS=NUM_VERTS)
+
+    # energy_only      = lambda x: hinge_energy(x, faces, lookup_vertex_face_neighbors, gradient_mode=0, NUM_VERTS=NUM_VERTS)
+    # energy_and_grad  = lambda x: hinge_energy(x, faces, lookup_vertex_face_neighbors, gradient_mode=2, NUM_VERTS=NUM_VERTS)
 
     # the first guess at the solution is the object itself
     first_guess = trimesh.vs.reshape(NUM_VERTS*3)
@@ -91,8 +98,8 @@ def optimize_energy(args):
             x0=first_guess,
             options={'disp': True},
             # method="CG",
-            # method="L-BFGS-B",
-            method="BFGS",
+            method="L-BFGS-B",
+            # method="BFGS",
             constraints=None,
             callback=callback,
             jac=args.exact_grad)
@@ -151,7 +158,7 @@ if __name__ == '__main__':
     aparser.add_argument('--in_obj', default="data/bunny.obj")
     aparser.add_argument('--out_obj', default="data/optimized_bunny.obj")
     aparser.add_argument('--save', action='store_true', default=True)
-    aparser.add_argument('--exact_grad', action='store_true', default=False, help="if true use exact gradient, if false use numerical approximation")
+    aparser.add_argument('--exact_grad', action='store_true', default=True, help="if true use exact gradient, if false use numerical approximation")
     aparser.add_argument('--energy', default="hinge", help="name of the cost function to use")
     aparser.add_argument('--action', default="optimize", help="what function to run")
 

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-from numpy.linalg import norm
 from scipy.linalg import eigh as eigendecomp
 import copy
 import numpy as np
@@ -86,8 +84,8 @@ def hinge_energy(input_vector, faces, lookup_vertex_face_neighbors, gradient_mod
             x = associated_eigenvector
 
             # for every face touching our vertex (vertex star)
-            for f_index in trimesh.vertex_face_neighbors(v_index):            
-                face = trimesh.faces[f_index]
+            for f_index in lookup_vertex_face_neighbors[v_index]:            
+                face = faces[f_index]
                 
                 # fi is v
                 fi_index = v_index
@@ -107,16 +105,16 @@ def hinge_energy(input_vector, faces, lookup_vertex_face_neighbors, gradient_mod
 
                 # scalar, double the area
                 A = face_areas[f_index] * 2.0
-              
+
                 # derivatives of the normal
                 dNdi = np.outer(np.cross(fk-fj, N), N)/A
                 dNdj = np.outer(np.cross(fi-fk, N), N)/A
                 dNdk = np.outer(np.cross(fj-fi, N), N)/A
-                assert_shape(dNdi, (3, 3))
+                assert_shape(dNdi, (3))
 
                 # angle derivatives math from paper
-                dThetadj = np.cross(N, (fi-fj)/norm(fi-fj))
-                dThetadk = np.cross(N, (fk-fi)/norm(fk-fi))
+                dThetadj = np.cross(N, (fi-fj)/np.linalg.norm(fi-fj))
+                dThetadk = np.cross(N, (fk-fi)/np.linalg.norm(fk-fi))
                 dThetadi = -1*(dThetadj + dThetadk)
                 assert_shape(dThetadj, (3,))
 

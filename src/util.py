@@ -31,6 +31,7 @@ def get_face_angles(verts, faces):
     angles = np.nan_to_num(np.column_stack([a, b, c]))
 
     return angles
+
 def assert_shape(m, shape):
     if m.shape != shape:
         raise ValueError("incorrect shape expected: {} found: {}".format(m.shape, shape))
