@@ -6,7 +6,7 @@ import numpy as np
 from util import assert_shape
 import util
 
-def hinge_energy(input_vector, trimesh, gradient_mode, NUM_VERTS):
+def hinge_energy(input_vector, faces, lookup_vertex_face_neighbors, gradient_mode, NUM_VERTS):
     """
     The covariance energy for minimizing Gaussian
     curvature and its gradient
@@ -35,15 +35,8 @@ def hinge_energy(input_vector, trimesh, gradient_mode, NUM_VERTS):
     # reshape input vector into a list of points
     verts = input_vector.reshape(NUM_VERTS, 3)
 
-    # mutate the trimesh w/ the new verts
-    # and update the normals and areas (
-    # these are the non-topological properties
-    # that change w/ vertices)
-    trimesh.vs = verts
-    trimesh.update_face_normals_and_areas()
-    face_areas   = trimesh.get_face_areas()
-    face_normals = trimesh.get_face_normals()
-
+    face_normals, face_areas = util.get_face_normals(verts, faces)
+    face_angles = util.get_face_angles(verts, faces)
     energy = []
 
     jacobian = np.zeros((NUM_VERTS, 3))
@@ -54,23 +47,10 @@ def hinge_energy(input_vector, trimesh, gradient_mode, NUM_VERTS):
         normal_covariance_matrix = np.zeros((3,3))
 
         # for every face touching our vertex (vertex star)
-        for f_index in trimesh.vertex_face_neighbors(v_index):            
-            face = trimesh.faces[f_index]
+        for f_index in lookup_vertex_face_neighbors[v_index]:            
+            face = faces[f_index]
 
-            # get the indices of the face in proper ijk
-            # order where is is the center of the vertex star
-            fi_index = v_index
-            fj_index, fk_index = [j for j in face if fi_index != j]
-
-            fi = verts[fi_index]
-            fj = verts[fj_index]
-            fk = verts[fk_index]
-            
-            # theta is the angle of the corner
-            # of the face at a
-            eij = np.subtract(fj, fi)
-            eik = np.subtract(fk, fi)
-            theta = util.angle_between(eij, eik)
+            theta = face_angles[f_index][face == v_index]
    
             # the normal of the face
             N = face_normals[f_index]
@@ -91,12 +71,12 @@ def hinge_energy(input_vector, trimesh, gradient_mode, NUM_VERTS):
         # variational form of an eigenvalue problem, λi can also be expressed
         # as the smallest eigenvalue of the 3 × 3 normal covariance matrix
         # ```
-        eigenvalues, eigenvectors = \
-            eigendecomp(normal_covariance_matrix)
+        eigenvalues, eigenvectors = eigendecomp(normal_covariance_matrix)
 
         smallest_eigenvalue = eigenvalues[0]
-        associated_eigenvector = eigenvectors[:,0]
 
+        associated_eigenvector = eigenvectors[:,0]
+        
         # the first eigenvalue is the smallest one
         energy.append(smallest_eigenvalue)
 
@@ -120,44 +100,35 @@ def hinge_energy(input_vector, trimesh, gradient_mode, NUM_VERTS):
                 
                 # theta is the angle of the corner
                 # of the face at fi
-                eij = np.subtract(fj, fi)
-                eik = np.subtract(fk, fi)
-                theta = util.angle_between(eij, eik)
+                theta = util.angle_between(fj-fi, fk-fi)
 
                 # the face normal
                 N = face_normals[f_index]
 
                 # scalar, double the area
-                A = face_areas[f_index] * 2
-
-                # oriented edges
-                ejk = np.subtract(fk, fj)
-                eki = np.subtract(fi, fk)
-                eij = np.subtract(fj, fi)
-                assert_shape(ejk, (3,))
-
+                A = face_areas[f_index] * 2.0
+              
                 # derivatives of the normal
-                dNdi = np.outer(np.cross(ejk, N), N)/A
-                dNdj = np.outer(np.cross(eki, N), N)/A
-                dNdk = np.outer(np.cross(eij, N), N)/A
+                dNdi = np.outer(np.cross(fk-fj, N), N)/A
+                dNdj = np.outer(np.cross(fi-fk, N), N)/A
+                dNdk = np.outer(np.cross(fj-fi, N), N)/A
                 assert_shape(dNdi, (3, 3))
 
-                # derivatives of the angle
-                dThetadj = -1 * np.cross(N, eij/norm(eij))
-                dThetadk = -1 * np.cross(N, eki/norm(eki))
-                dThetadi = np.cross(N, eij+eki)
+                # angle derivatives math from paper
+                dThetadj = np.cross(N, (fi-fj)/norm(fi-fj))
+                dThetadk = np.cross(N, (fk-fi)/norm(fk-fi))
+                dThetadi = -1*(dThetadj + dThetadk)
                 assert_shape(dThetadj, (3,))
 
                 xdotN = x.dot(N)
-                assert_shape(xdotN, ())
 
-                # a 3 vector pointing in the directly the i vertex should move
-                jacobian[fi_index] += xdotN*xdotN*dThetadi + 2*theta*xdotN * x.dot(dNdi)
-                jacobian[fj_index] += xdotN*xdotN*dThetadj + 2*theta*xdotN * x.dot(dNdj)
-                jacobian[fk_index] += xdotN*xdotN*dThetadk + 2*theta*xdotN * x.dot(dNdk)
+                # a 3 vector pointing in the direction the i vertex should move
+                jacobian[fi_index] += xdotN*xdotN*dThetadi + 2.0*theta*xdotN * x.dot(dNdi)
+                jacobian[fj_index] += xdotN*xdotN*dThetadj + 2.0*theta*xdotN * x.dot(dNdj)
+                jacobian[fk_index] += xdotN*xdotN*dThetadk + 2.0*theta*xdotN * x.dot(dNdk)
 
     # squared sum of the energies is our final cost value
-    K = np.sum(energy)**2
+    K = np.sum(energy)
 
     # return energy, gradient or both
     if gradient_mode == 0:

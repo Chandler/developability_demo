@@ -1,0 +1,8 @@
+* try to vectorize outer loop in hinge energy fast
+
+* implement analytic gradient in hinge energy fast
+
+* try to JIT/GPUify hinge energy fast with or without the outer vectorization.
+seems like they would both help and are not mutually exclusive?
+
+* ditch trimesh util, use open3d for opening/processing
